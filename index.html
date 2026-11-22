@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A CMSC 170 report and presentation comparing KNN, Random Forest, and Perceptron on credit card fraud detection.">
+  <meta name="theme-color" content="#101f37">
+  <title>Credit Card Fraud Detection | CMSC 170</title>
+  <link rel="icon" href="assets/badge.png" type="image/png">
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#overview">Skip to report</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="#overview">
+        <span class="brand-icon" aria-hidden="true">170</span>
+        <span class="brand-copy">
+          <strong>Fraud Detection</strong>
+          <span>CMSC 170 · Group 5</span>
+        </span>
+      </a>
+      <nav class="site-nav" aria-label="Report sections">
+        <a href="#overview">Overview</a>
+        <a href="#dataset">Dataset</a>
+        <a href="#methods">Methods</a>
+        <a href="#results">Model Results</a>
+        <a href="#comparison">Comparison</a>
+        <a href="#limitations">Limitations</a>
+        <a href="#resources">Resources</a>
+      </nav>
+      <button type="button" class="header-start button button-primary" data-start-presentation hidden>Start presentation</button>
+    </div>
+  </header>
+
+  <main id="report">
+    <section id="overview" class="report-section hero" data-slide="Overview" aria-labelledby="report-title">
+      <div class="hero-lead">
+        <p class="eyebrow">CMSC 170 · Introduction to Artificial Intelligence</p>
+        <h1 id="report-title" tabindex="-1">Credit Card <br>Fraud Detection</h1>
+        <p class="hero-description">Given a labeled credit card transaction dataset, how well can three supervised learning models identify fraudulent transactions?</p>
+        <dl class="study-sizes" aria-label="Study size">
+          <div><dt>Sampled</dt><dd>600</dd></div>
+          <div><dt>Training per model</dt><dd>480</dd></div>
+          <div><dt>Test per model</dt><dd>120</dd></div>
+        </dl>
+        <div class="hero-actions">
+          <button type="button" class="button button-primary" data-start-presentation hidden>Start presentation</button>
+          <a class="button button-secondary" href="#comparison">Compare models</a>
+        </div>
+        <p class="team-credit"><strong>Group 5 · EF4L</strong><br>De Guzman, Nathan Seth · Ibanez, Victor Luis · Villagen, Kyle Martin</p>
+        <p class="team-credit">Summary report submitted in partial fulfillment of the course requirements.</p>
+      </div>
+
+      <div class="hero-aside">
+        <div class="hero-metric">
+          <p class="eyebrow">Highest test accuracy</p>
+          <strong>95.83%</strong>
+          <p>KNN and Random Forest both got 115 of 120 predictions right. All three models reached at least 95% on their respective test sets.</p>
+        </div>
+        <ul class="model-summary" aria-label="Model takeaways">
+          <li class="model-knn"><strong>KNN</strong><span>Highest F1-score · 95.80%</span></li>
+          <li class="model-forest"><strong>Random Forest</strong><span>Highest precision · 98.25%</span></li>
+          <li class="model-perceptron"><strong>Perceptron</strong><span>Highest recall · 96.83%</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="dataset" class="report-section" data-slide="Dataset" aria-labelledby="dataset-title">
+      <header class="section-head">
+        <h2 id="dataset-title" tabindex="-1">Dataset</h2>
+        <p>Nidula Elgiriyewithana published the Credit Card Fraud Detection Dataset 2023 on Kaggle. It contains more than 550,000 anonymized transactions made by European cardholders in 2023.</p>
+      </header>
+
+      <div class="split">
+        <div>
+          <h3>Why this dataset?</h3>
+          <p>The group sampled 600 rows because of the full dataset’s size. It gave the class a realistic binary classification task for comparing supervised learning methods.</p>
+          <div class="table-scroll" role="region" aria-label="Dataset fields" tabindex="0">
+            <table>
+              <thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Meaning</th></tr></thead>
+              <tbody>
+                <tr><th scope="row"><code>id</code></th><td>Identifier</td><td>Unique ID of each transaction</td></tr>
+                <tr><th scope="row"><code>V1</code>–<code>V28</code></th><td>Anonymized features</td><td>Masked transaction attributes</td></tr>
+                <tr><th scope="row"><code>Amount</code></th><td>Numeric</td><td>Value of the transaction</td></tr>
+                <tr><th scope="row"><code>Class</code></th><td>Binary label</td><td>1 = fraudulent, 0 = legitimate</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>Masking protects cardholders and limits what the group can say about real-world details such as transaction time, date, or location.</p>
+          <ul class="resource-list">
+            <li><a href="https://www.kaggle.com/datasets/nelgiriyewithana/credit-card-fraud-detection-dataset-2023/data">Original dataset on Kaggle</a></li>
+            <li><a href="https://drive.google.com/file/d/1LeLE5PrKpIYX20MCevWgvPh31cttIZGP/view?usp=sharing">600-row sample on Google Drive</a></li>
+          </ul>
+        </div>
+        <figure class="figure-frame">
+          <a href="assets/sample.png" data-enlarge aria-label="Enlarge sample dataset screenshot">
+            <img src="assets/sample.png" width="1897" height="707" alt="Spreadsheet preview with transaction IDs and anonymized feature values in the first rows of the sample.">
+          </a>
+          <figcaption>Screenshot of the 600-row sample dataset.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="methods" class="report-section" data-slide="Methods" aria-labelledby="methods-title">
+      <header class="section-head">
+        <h2 id="methods-title" tabindex="-1">Methods and setup</h2>
+        <p>Each model used 29 input features, with 480 rows for training and 120 for testing. The Perceptron used an entry-order split and had three more fraudulent transactions in its test set.</p>
+      </header>
+
+      <div class="table-scroll" role="region" aria-label="Model setup and test class counts" tabindex="0">
+        <table>
+          <thead><tr><th scope="col">Model</th><th scope="col">Test set</th><th scope="col">How it works</th><th scope="col">Reported settings</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">K-Nearest Neighbors (KNN)</th><td>60 legitimate, 60 fraud</td><td>Finds the five most similar labeled transactions and uses their majority label.</td><td><var>k</var> = 5, majority vote</td></tr>
+            <tr><th scope="row">Random Forest</th><td>60 legitimate, 60 fraud</td><td>Combines the predictions of multiple decision trees.</td><td>Out-of-bag (OOB) score tracked</td></tr>
+            <tr><th scope="row">Perceptron</th><td>57 legitimate, 63 fraud</td><td>Uses a linear decision boundary to predict one of two classes.</td><td>Learning rate 0.01, bias 0, up to 100 epochs</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>How to read the scores</h3>
+      <div class="table-scroll" role="region" aria-label="Evaluation metric definitions" tabindex="0">
+        <table>
+          <thead><tr><th scope="col">Metric</th><th scope="col">Formula</th><th scope="col">Question it answers</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Accuracy</th><td><code>(TP + TN) / total</code></td><td>How often was the model right overall?</td></tr>
+            <tr><th scope="row">Precision</th><td><code>TP / (TP + FP)</code></td><td>Of the fraud alerts, how many were correct?</td></tr>
+            <tr><th scope="row">Recall</th><td><code>TP / (TP + FN)</code></td><td>Of the actual frauds, how many were caught?</td></tr>
+            <tr><th scope="row">F1-score</th><td><code>2PR / (P + R)</code></td><td>How well did the model balance precision (<var>P</var>) and recall (<var>R</var>)?</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><strong>TP</strong> means caught fraud, <strong>TN</strong> means correctly cleared legitimate transactions, <strong>FP</strong> means false alarms, and <strong>FN</strong> means missed fraud.</p>
+    </section>
+
+    <section id="results" class="report-section" data-slide="Model Results" aria-labelledby="results-title">
+      <header class="section-head">
+        <h2 id="results-title" tabindex="-1">Model results</h2>
+        <p>Each confusion matrix uses actual classes as rows and predicted classes as columns. Fraud is the positive class.</p>
+      </header>
+
+      <article class="model-detail model-knn" aria-labelledby="knn-title">
+        <h3 id="knn-title">K-Nearest Neighbors</h3>
+        <p>KNN got 115 of 120 predictions right. Its five errors were two false alarms and three missed frauds. It tied for best accuracy and had the strongest balance of precision and recall by F1-score.</p>
+        <div class="split">
+          <div class="table-scroll" role="region" aria-label="KNN scores and calculations" tabindex="0">
+            <table>
+              <thead><tr><th scope="col">Metric</th><th scope="col">Score</th><th scope="col">Calculation</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">Accuracy</th><td>95.83%</td><td>115 / 120</td></tr>
+                <tr><th scope="row">Precision</th><td>96.61%</td><td>57 / 59</td></tr>
+                <tr><th scope="row">Recall</th><td>95.00%</td><td>57 / 60</td></tr>
+                <tr><th scope="row">F1-score</th><td>95.80%</td><td>2PR / (P + R)</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="table-scroll" role="region" aria-label="KNN confusion matrix" tabindex="0">
+            <table class="matrix">
+              <thead><tr><th scope="col">Actual class</th><th scope="col">Predicted legitimate</th><th scope="col">Predicted fraud</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">Legitimate</th><td class="correct"><strong>58</strong><br>True negatives</td><td class="error"><strong>2</strong><br>False alarms</td></tr>
+                <tr><th scope="row">Fraud</th><td class="error"><strong>3</strong><br>Missed frauds</td><td class="correct"><strong>57</strong><br>Caught frauds</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <p><a href="https://colab.research.google.com/drive/1pVj9MzmSTZJ4iIfU-yQqUYaKFoQwpYJK?usp=sharing">KNN notebook on Google Colab</a></p>
+      </article>
+
+      <article class="model-detail model-forest" aria-labelledby="forest-title">
+        <h3 id="forest-title">Random Forest</h3>
+        <p>Random Forest got 115 of 120 predictions right. It produced just one false alarm, the fewest of the three, and missed four frauds. Catching more fraud is the main area for improvement.</p>
+        <div class="split">
+          <div class="table-scroll" role="region" aria-label="Random Forest scores and calculations" tabindex="0">
+            <table>
+              <thead><tr><th scope="col">Metric</th><th scope="col">Score</th><th scope="col">Calculation</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">Accuracy</th><td>95.83%</td><td>115 / 120</td></tr>
+                <tr><th scope="row">Precision</th><td>98.25%</td><td>56 / 57</td></tr>
+                <tr><th scope="row">Recall</th><td>93.33%</td><td>56 / 60</td></tr>
+                <tr><th scope="row">F1-score</th><td>95.73%</td><td>2PR / (P + R)</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="table-scroll" role="region" aria-label="Random Forest confusion matrix" tabindex="0">
+            <table class="matrix">
+              <thead><tr><th scope="col">Actual class</th><th scope="col">Predicted legitimate</th><th scope="col">Predicted fraud</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">Legitimate</th><td class="correct"><strong>59</strong><br>True negatives</td><td class="error"><strong>1</strong><br>False alarm</td></tr>
+                <tr><th scope="row">Fraud</th><td class="error"><strong>4</strong><br>Missed frauds</td><td class="correct"><strong>56</strong><br>Caught frauds</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <p>The out-of-bag (OOB) score of <strong>0.9563</strong> estimates accuracy using training rows left out of individual trees. It was close to the test score of <strong>0.9583</strong> in this run.</p>
+        <h4>Most influential features</h4>
+        <div class="split">
+          <figure class="figure-frame">
+            <a href="assets/feature-importance.png" data-enlarge aria-label="Enlarge Random Forest feature importance chart">
+              <img src="assets/feature-importance.png" width="1408" height="770" alt="Ranked Random Forest feature importance bars led by V14, V4, V12, and V10.">
+            </a>
+            <figcaption>Ten most important Random Forest features. The top four make up 60.2% of total importance, and the top ten make up about 85%.</figcaption>
+          </figure>
+          <div class="table-scroll" role="region" aria-label="Top ten feature importance scores" tabindex="0">
+            <table>
+              <thead><tr><th scope="col">Rank</th><th scope="col">Feature</th><th scope="col">Importance</th></tr></thead>
+              <tbody>
+                <tr><td>1</td><th scope="row">V14</th><td>0.2176</td></tr>
+                <tr><td>2</td><th scope="row">V4</th><td>0.1590</td></tr>
+                <tr><td>3</td><th scope="row">V12</th><td>0.1208</td></tr>
+                <tr><td>4</td><th scope="row">V10</th><td>0.1049</td></tr>
+                <tr><td>5</td><th scope="row">V17</th><td>0.0662</td></tr>
+                <tr><td>6</td><th scope="row">V11</th><td>0.0599</td></tr>
+                <tr><td>7</td><th scope="row">V3</th><td>0.0536</td></tr>
+                <tr><td>8</td><th scope="row">V16</th><td>0.0236</td></tr>
+                <tr><td>9</td><th scope="row">V21</th><td>0.0234</td></tr>
+                <tr><td>10</td><th scope="row">V2</th><td>0.0232</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <p><a href="https://colab.research.google.com/drive/1gmNoKJkZNNjhpaNXE0d9HjmVKQVsmdaU?usp=sharing">Random Forest notebook on Google Colab</a></p>
+      </article>
+
+      <article class="model-detail model-perceptron" aria-labelledby="perceptron-title">
+        <h3 id="perceptron-title">Perceptron</h3>
+        <p>Perceptron got 114 of 120 predictions right. It caught 61 of 63 frauds and raised four false alarms. Its notebook flagged that the classes may overlap in a way a linear boundary cannot fully separate.</p>
+        <div class="split">
+          <div class="table-scroll" role="region" aria-label="Perceptron scores and calculations" tabindex="0">
+            <table>
+              <thead><tr><th scope="col">Metric</th><th scope="col">Score</th><th scope="col">Calculation</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">Accuracy</th><td>95.00%</td><td>114 / 120</td></tr>
+                <tr><th scope="row">Precision</th><td>93.85%</td><td>61 / 65</td></tr>
+                <tr><th scope="row">Recall</th><td>96.83%</td><td>61 / 63</td></tr>
+                <tr><th scope="row">F1-score</th><td>95.31%</td><td>2PR / (P + R)</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="table-scroll" role="region" aria-label="Perceptron confusion matrix" tabindex="0">
+            <table class="matrix">
+              <thead><tr><th scope="col">Actual class</th><th scope="col">Predicted legitimate</th><th scope="col">Predicted fraud</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">Legitimate</th><td class="correct"><strong>53</strong><br>True negatives</td><td class="error"><strong>4</strong><br>False alarms</td></tr>
+                <tr><th scope="row">Fraud</th><td class="error"><strong>2</strong><br>Missed frauds</td><td class="correct"><strong>61</strong><br>Caught frauds</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <p><a href="https://colab.research.google.com/drive/1KvOld9vl0sAlxcRU5xJl_93XYQj42rbM#scrollTo=959555a0">Perceptron notebook on Google Colab</a></p>
+      </article>
+    </section>
+
+    <section id="comparison" class="report-section" data-slide="Comparison" aria-labelledby="comparison-title">
+      <header class="section-head">
+        <h2 id="comparison-title" tabindex="-1">Comparing the models</h2>
+        <p>Every model made five or six errors. Their test sets had the same size, but Perceptron tested on 63 fraudulent and 57 legitimate transactions while the other two used a 60/60 split.</p>
+      </header>
+      <div class="split">
+        <figure class="figure-frame">
+          <a href="assets/metrics-comparison.png" data-enlarge aria-label="Enlarge metric comparison chart">
+            <img src="assets/metrics-comparison.png" width="1496" height="792" alt="Grouped bars for accuracy, precision, recall, and F1-score. Random Forest leads precision, Perceptron leads recall, and KNN leads F1-score.">
+          </a>
+          <figcaption>Scores by model. The vertical axis starts at 90% to make small differences visible.</figcaption>
+        </figure>
+        <div class="table-scroll" role="region" aria-label="Exact model scores" tabindex="0">
+          <table>
+            <thead><tr><th scope="col">Model</th><th scope="col">Accuracy</th><th scope="col">Precision</th><th scope="col">Recall</th><th scope="col">F1-score</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">KNN</th><td>95.83%</td><td>96.61%</td><td>95.00%</td><td>95.80%</td></tr>
+              <tr><th scope="row">Random Forest</th><td>95.83%</td><td>98.25%</td><td>93.33%</td><td>95.73%</td></tr>
+              <tr><th scope="row">Perceptron</th><td>95.00%</td><td>93.85%</td><td>96.83%</td><td>95.31%</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="comparison-charts">
+        <figure class="figure-frame">
+          <a href="assets/confusion-matrices.png" data-enlarge aria-label="Enlarge the side-by-side confusion matrices">
+            <img src="assets/confusion-matrices.png" width="1540" height="594" alt="KNN counts are 58 TN, 2 FP, 3 FN, and 57 TP. Random Forest counts are 59, 1, 4, and 56. Perceptron counts are 53, 4, 2, and 61.">
+          </a>
+          <figcaption>Confusion matrices for each 120-row test set. Green diagonal cells are correct predictions. Red off-diagonal cells are errors.</figcaption>
+        </figure>
+        <figure class="figure-frame">
+          <a href="assets/errors-comparison.png" data-enlarge aria-label="Enlarge the false alarms and missed fraud chart">
+            <img src="assets/errors-comparison.png" width="1452" height="594" alt="KNN had 2 false alarms and 3 missed frauds. Random Forest had 1 and 4. Perceptron had 4 and 2.">
+          </a>
+          <figcaption>False alarms and missed frauds out of 120 transactions per model.</figcaption>
+        </figure>
+      </div>
+
+      <h3>Differences between models</h3>
+      <p>Each number shows how many percentage points the first model gained or lost compared with the second.</p>
+      <div class="table-scroll" role="region" aria-label="Pairwise score differences in percentage points" tabindex="0">
+        <table>
+          <thead><tr><th scope="col">Comparison</th><th scope="col">Accuracy</th><th scope="col">Precision</th><th scope="col">Recall</th><th scope="col">F1-score</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">KNN vs Random Forest</th><td>0.00</td><td>−1.64</td><td>+1.67</td><td>+0.07</td></tr>
+            <tr><th scope="row">KNN vs Perceptron</th><td>+0.83</td><td>+2.76</td><td>−1.83</td><td>+0.49</td></tr>
+            <tr><th scope="row">Random Forest vs Perceptron</th><td>+0.83</td><td>+4.40</td><td>−3.50</td><td>+0.42</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul>
+        <li><strong>KNN and Random Forest</strong> both got 115 right. KNN caught one extra fraud and raised one extra false alarm.</li>
+        <li><strong>KNN and Perceptron</strong> had similar F1-scores. KNN raised two fewer false alarms, and Perceptron’s recall was 1.83 points higher.</li>
+        <li><strong>Random Forest and Perceptron</strong> differed most on precision. Random Forest led by 4.40 points, and Perceptron missed two frauds compared with four.</li>
+      </ul>
+
+      <h3>Which model fits the priority?</h3>
+      <dl class="priority-list">
+        <div class="model-perceptron"><dt>Catch more fraud</dt><dd><strong>Perceptron</strong> had 96.83% recall and missed two frauds.</dd></div>
+        <div class="model-forest"><dt>Avoid false alarms</dt><dd><strong>Random Forest</strong> had 98.25% precision and raised one false alarm.</dd></div>
+        <div class="model-knn"><dt>Balance both</dt><dd><strong>KNN</strong> tied for best accuracy and had the highest F1-score at 95.80%.</dd></div>
+      </dl>
+    </section>
+
+    <section id="limitations" class="report-section" data-slide="Limitations" aria-labelledby="limitations-title">
+      <header class="section-head">
+        <h2 id="limitations-title" tabindex="-1">Limitations</h2>
+        <p>The results describe how each model performed on this classroom sample.</p>
+      </header>
+      <ul class="limitations-list">
+        <li><strong>Small sample</strong><p>Each model was evaluated on only 120 test transactions from the 600-row sample. One additional correct prediction changes accuracy by about 0.83 percentage points.</p></li>
+        <li><strong>Different proportions in the test sets</strong><p>Perceptron tested on 63 frauds and 57 legitimate transactions. KNN and Random Forest each used 60 of each, so the precision and recall comparisons are less direct.</p></li>
+        <li><strong>Anonymized features</strong><p>The masked V1–V28 fields make it difficult to explain model decisions in terms of real transaction details.</p></li>
+        <li><strong>Real-world testing</strong><p>All three models need evaluation on more representative data before they are used on live transactions.</p></li>
+      </ul>
+    </section>
+
+    <section id="resources" class="report-section" data-slide="Resources" aria-labelledby="resources-title">
+      <header class="section-head">
+        <h2 id="resources-title" tabindex="-1">Project resources</h2>
+        <p>Open the notebooks to see how each experiment was run, or review the original output screenshots from the report.</p>
+      </header>
+      <ul class="resource-list">
+        <li><a href="https://www.kaggle.com/datasets/nelgiriyewithana/credit-card-fraud-detection-dataset-2023/data">Original dataset on Kaggle</a></li>
+        <li><a href="https://drive.google.com/file/d/1LeLE5PrKpIYX20MCevWgvPh31cttIZGP/view?usp=sharing">600-row sample on Google Drive</a></li>
+        <li><a href="https://github.com/oreosdg/cmsc170project">GitHub repository</a> <small>Access required</small></li>
+        <li><a href="https://colab.research.google.com/drive/1pVj9MzmSTZJ4iIfU-yQqUYaKFoQwpYJK?usp=sharing">KNN notebook</a></li>
+        <li><a href="https://colab.research.google.com/drive/1gmNoKJkZNNjhpaNXE0d9HjmVKQVsmdaU?usp=sharing">Random Forest notebook</a></li>
+        <li><a href="https://colab.research.google.com/drive/1KvOld9vl0sAlxcRU5xJl_93XYQj42rbM#scrollTo=959555a0">Perceptron notebook</a></li>
+      </ul>
+      <h3>Original run outputs</h3>
+      <div class="evidence-grid">
+        <figure class="figure-frame">
+          <a href="assets/forest-features-output.png" data-enlarge aria-label="Enlarge the Random Forest feature importance output">
+            <img src="assets/forest-features-output.png" width="857" height="417" alt="Original Random Forest notebook output listing the ten most important features.">
+          </a>
+          <figcaption>Random Forest’s top ten feature importances as printed by the notebook.</figcaption>
+        </figure>
+        <figure class="figure-frame">
+          <a href="assets/forest-evaluation-output.png" data-enlarge aria-label="Enlarge the Random Forest evaluation output">
+            <img src="assets/forest-evaluation-output.png" width="492" height="270" alt="Random Forest output shows 480 training rows and 120 test rows with 29 features each, OOB score 0.9563, metrics, and the confusion matrix.">
+          </a>
+          <figcaption>Random Forest’s training and test sizes, OOB score, evaluation metrics, and confusion matrix.</figcaption>
+        </figure>
+        <figure class="figure-frame">
+          <a href="assets/perceptron-output.png" data-enlarge aria-label="Enlarge the Perceptron evaluation output">
+            <img src="assets/perceptron-output.png" width="290" height="389" alt="Perceptron output lists training and test sizes, learning rate 0.01, bias 0, maximum 100 epochs, the linear separability message, and evaluation metrics.">
+          </a>
+          <figcaption>Perceptron’s training settings and evaluation metrics.</figcaption>
+        </figure>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <span>CMSC 170 · Group 5</span>
+      <a href="#overview">Back to overview</a>
+    </div>
+  </footer>
+
+  <dialog id="presentation" class="presentation-dialog" aria-labelledby="presentation-title">
+    <div class="presentation-shell">
+      <header class="presentation-header">
+        <p id="presentation-title">Credit Card Fraud Detection</p>
+        <button type="button" class="button button-secondary" data-close-presentation aria-keyshortcuts="Escape">Exit presentation</button>
+      </header>
+      <div id="presentation-stage" class="presentation-stage"></div>
+      <footer class="presentation-controls">
+        <button type="button" class="button button-secondary" data-prev-slide aria-keyshortcuts="ArrowLeft">Previous</button>
+        <p id="presentation-progress" class="presentation-progress" role="status" aria-atomic="true"></p>
+        <button type="button" class="button button-primary" data-next-slide aria-keyshortcuts="ArrowRight">Next</button>
+      </footer>
+    </div>
+  </dialog>
+
+  <dialog id="image-viewer" class="image-dialog" aria-labelledby="image-title" aria-describedby="image-caption">
+    <div class="image-dialog-inner">
+      <header class="image-dialog-header">
+        <h2 id="image-title">Report figure</h2>
+        <button type="button" class="button button-secondary" data-close-image>Close image</button>
+      </header>
+      <div class="image-dialog-viewport" tabindex="0" aria-label="Scrollable figure">
+        <img id="enlarged-image" src="assets/sample.png" alt="">
+      </div>
+      <p id="image-caption"></p>
+    </div>
+  </dialog>
+</body>
+</html>
